@@ -1,0 +1,341 @@
+<!DOCTYPE html><html class="plexamp-square-corners"><head>
+    <meta charset="utf-8">
+    <title>Plexamp</title>
+    <style nonce="__TAURI_STYLE_NONCE__">
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        background: transparent;
+      }
+
+      
+      .plexamp-square-corners,
+      .plexamp-square-corners body {
+        background: #2e3439 !important;
+      }
+
+      #react-app,
+      #react-app > div {
+        height: 100%;
+        background-color: #2e3439;
+        border-radius: 16px;
+        overflow: hidden;
+      }
+
+      
+      .plexamp-square-corners #react-app,
+      .plexamp-square-corners #react-app > div {
+        border-radius: 0 !important;
+      }
+
+      ::-webkit-scrollbar {
+        width: 9px;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      ::-webkit-scrollbar:window-inactive {
+        background: none;
+      }
+
+      ::-webkit-scrollbar-track {
+        -webkit-border-radius: 2px;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        -webkit-border-radius: 20px;
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      ::-webkit-scrollbar-thumb:window-inactive {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      input:focus,
+      textarea:focus {
+        outline: none;
+      }
+
+      body {
+        text-rendering: auto;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      :not(input):not(textarea),
+      :not(input):not(textarea)::after,
+      :not(input):not(textarea)::before {
+        -webkit-user-select: none;
+        user-select: none;
+      }
+
+      * {
+        -webkit-user-drag: none;
+      }
+
+      input,
+      button,
+      textarea,
+      :focus {
+        outline: none;
+      }
+
+      input,
+      textarea {
+        -webkit-user-select: text;
+        user-select: text;
+      }
+    </style>
+    <script>
+
+
+      document.addEventListener('mousedown', function(e) {
+        var t = e.target;
+        if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA') {
+          setTimeout(function() { t.focus(); }, 0);
+        }
+      }, true);
+
+      document.addEventListener('contextmenu', function(e) { e.preventDefault(); }, false);
+
+      if (typeof global === 'undefined') { window.global = globalThis; }
+      if (typeof process === 'undefined') { window.process = { env: { NODE_ENV: 'production' } }; }
+      if (typeof Buffer === 'undefined') { window.Buffer = { isBuffer: function() { return false; } }; }
+
+
+
+      (function() {
+        var ti = window.__TAURI_INTERNALS__;
+        if (!ti) return;
+        var convert = function(url) {
+          return (typeof url === 'string' && url.startsWith('file://'))
+            ? ti.convertFileSrc(url.substring(7)) : url;
+        };
+        var srcDesc = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
+        if (srcDesc && srcDesc.set) {
+          Object.defineProperty(HTMLImageElement.prototype, 'src', {
+            get: srcDesc.get,
+            set: function(v) { srcDesc.set.call(this, convert(v)); },
+            configurable: true, enumerable: true
+          });
+        }
+        var origSetAttr = Element.prototype.setAttribute;
+        Element.prototype.setAttribute = function(name, value) {
+          if (name === 'src') value = convert(value);
+          return origSetAttr.call(this, name, value);
+        };
+      })();
+    </script>
+    <script type="module" crossorigin="" src="/assets/index-DyWjVV-d.js"></script>
+    <link rel="modulepreload" crossorigin="" href="/assets/FileSystem.web-CId5PGwn.js">
+  </head>
+  <body>
+    <div id="react-app"></div>
+
+    <script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      var DEV = location.protocol.indexOf('http') === 0 && location.hostname === 'localhost' && !!location.port;
+      var _errors = [];
+
+      function _report(all) {
+
+
+        try { if (window.__TAURI_INTERNALS__) window.__TAURI_INTERNALS__.invoke('log_js_error', { error: all }); } catch(e) {}
+        try { localStorage.setItem('__plexamp_js_errors', all); } catch(e) {}
+      }
+
+      function _render(all) {
+        var el = document.getElementById('react-app');
+        if (!el) { return; }
+        el.innerHTML =
+          '<div style="padding:10px;font-family:monospace;font-size:11px;color:#ff6b6b;background:#1a1a2e;height:100%;overflow:auto;box-sizing:border-box">' +
+            '<div style="display:flex;gap:8px;margin-bottom:10px">' +
+              '<button onclick="_copyErrors()" style="padding:4px 12px;background:#4a4a6a;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px">Copy All</button>' +
+              '<span id="copy-status" style="color:#6f6;line-height:24px"></span>' +
+            '</div>' +
+            '<pre style="white-space:pre-wrap;word-break:break-all;margin:0;-webkit-user-select:text;user-select:text">' + all.replace(/</g,'&lt;') + '</pre>' +
+          '</div>';
+        try { document.title = 'ERROR: ' + all.substring(0, 500); } catch(e) {}
+      }
+
+      function _logError(info) {
+        _errors.push(info);
+        var all = _errors.join('\n\n---\n\n');
+        _report(all);
+        if (DEV) { _render(all); }
+      }
+
+      window._copyErrors = function() {
+        var all = _errors.join('\n\n---\n\n');
+        var status = document.getElementById('copy-status');
+        var said = function(text) { if (status) { status.textContent = text; } };
+
+
+
+
+
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(all).then(
+            function() { said('Copied!'); },
+            function() { said(_legacyCopy(all) ? 'Copied!' : 'Failed - select and copy manually'); }
+          );
+          return;
+        }
+        said(_legacyCopy(all) ? 'Copied!' : 'Failed - select and copy manually');
+      };
+
+      function _legacyCopy(all) {
+        var ta = document.createElement('textarea');
+        ta.value = all;
+        ta.style.cssText = 'position:fixed;left:-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        var ok = false;
+        try { ok = document.execCommand('copy'); } catch(e) { ok = false; }
+        document.body.removeChild(ta);
+        return ok;
+      }
+
+      window.onerror = function(msg, url, line, col, error) {
+        _logError(msg + '\n' + url + ':' + line + ':' + col + '\n' + (error && error.stack ? error.stack : ''));
+      };
+      window.onunhandledrejection = function(event) {
+        var r = event.reason;
+        var info = 'Unhandled rejection:\n';
+        if (r instanceof Error) {
+          info += 'Name: ' + r.name + '\nMessage: ' + r.message + '\nStack: ' + r.stack;
+        } else {
+          info += 'Type: ' + typeof r + '\nValue: ' + String(r) + '\nJSON: ';
+          try { info += JSON.stringify(r); } catch(e) { info += '(not serializable)'; }
+        }
+        _logError(info);
+      };
+    </script>
+  
+
+<script>
+(function(){
+  if (window.__BETTERPA__) return;
+  window.__BETTERPA__ = true;
+  var repoCss = "C:/Users/nathan/Projects/git/BetterPA/custom.css";
+  var repoJs = "C:/Users/nathan/Projects/git/BetterPA/custom.js";
+  var style = document.createElement("style");
+  style.id = "betterpa-custom-css";
+  document.head.appendChild(style);
+  new MutationObserver(function(){
+    if (document.head.lastElementChild !== style) document.head.appendChild(style);
+  }).observe(document.head, { childList: true });
+
+  var ti = window.__TAURI_INTERNALS__;
+  var lastCss = "";
+
+  async function readText(p) {
+    if (!ti) return null;
+    try {
+      var url = ti.convertFileSrc(p) + "?t=" + Date.now();
+      var res = await fetch(url, { cache: "no-store" });
+      if (res.ok) return await res.text();
+    } catch (e) {}
+    try {
+      var buf = await ti.invoke("plugin:fs|read_text_file", { path: p });
+      return new TextDecoder("utf-8").decode(buf instanceof ArrayBuffer ? buf : Uint8Array.from(buf));
+    } catch (e) {}
+    return null;
+  }
+
+  async function resolvePaths() {
+    var paths = { css: [repoCss], js: [repoJs] };
+    if (ti) {
+      try {
+        var appData = (await ti.invoke("plugin:path|resolve_directory", { directory: 14 })).replace(/\\/g, "/");
+        paths.css.push(appData + "/custom.css");
+        paths.js.push(appData + "/custom.js");
+      } catch (e) {}
+    }
+    return paths;
+  }
+
+  var pathsPromise = resolvePaths();
+
+  async function reloadCss(force) {
+    var paths = await pathsPromise;
+    for (var idx = 0; idx < paths.css.length; idx++) {
+      var txt = await readText(paths.css[idx]);
+      if (txt !== null) {
+        if (force || txt !== lastCss) {
+          lastCss = txt;
+          style.textContent = txt;
+        }
+        return;
+      }
+    }
+  }
+
+  async function runCustomJs() {
+    var paths = await pathsPromise;
+    for (var idx = 0; idx < paths.js.length; idx++) {
+      var code = await readText(paths.js[idx]);
+      if (code !== null) {
+        try { (0, eval)(code); } catch (e) { console.error("[BetterPA JS]", e); }
+        return;
+      }
+    }
+  }
+
+  reloadCss(true);
+  setInterval(function(){ reloadCss(false); }, 800);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", runCustomJs);
+  } else {
+    runCustomJs();
+  }
+
+  var zoom = parseFloat(localStorage.getItem("__betterpa_zoom") || "1") || 1;
+  if (zoom !== 1 && ti) {
+    setTimeout(function(){
+      ti.invoke("plugin:webview|set_webview_zoom", { label: "main", value: zoom }).catch(function(){});
+    }, 600);
+  }
+
+  window.addEventListener("keydown", function(e) {
+    if (!ti) return;
+    if (e.key === "F12" || (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "i")) {
+      e.preventDefault();
+      e.stopPropagation();
+      ti.invoke("open_devtools");
+    } else if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "r") {
+      e.preventDefault();
+      e.stopPropagation();
+      reloadCss(true);
+    } else if (e.ctrlKey && (e.key === "=" || e.key === "+")) {
+      e.preventDefault();
+      zoom = Math.min(2.5, Math.round((zoom + 0.05) * 100) / 100);
+      localStorage.setItem("__betterpa_zoom", String(zoom));
+      ti.invoke("plugin:webview|set_webview_zoom", { label: "main", value: zoom });
+    } else if (e.ctrlKey && e.key === "-") {
+      e.preventDefault();
+      zoom = Math.max(0.5, Math.round((zoom - 0.05) * 100) / 100);
+      localStorage.setItem("__betterpa_zoom", String(zoom));
+      ti.invoke("plugin:webview|set_webview_zoom", { label: "main", value: zoom });
+    } else if (e.ctrlKey && e.key === "0") {
+      e.preventDefault();
+      zoom = 1.0;
+      localStorage.setItem("__betterpa_zoom", "1");
+      ti.invoke("plugin:webview|set_webview_zoom", { label: "main", value: zoom });
+    }
+  }, true);
+})();
+</script></body></html>

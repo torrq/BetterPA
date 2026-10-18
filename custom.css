@@ -1,0 +1,99 @@
+/* ==========================================================================
+   BetterPA — Custom Desktop Stylesheet for Plexamp
+   ==========================================================================
+   - Edit and save this file while Plexamp is running: changes hot-reload live!
+   - Press F12 or Ctrl+Shift+I inside Plexamp to open Edge WebView2 DevTools.
+   - Press Ctrl+Shift+R to force-reload this stylesheet.
+   - Press Ctrl+= / Ctrl+- / Ctrl+0 to smoothly scale the UI zoom level.
+   ========================================================================== */
+
+:root {
+  --betterpa-grid-min-col: 340px;
+  --betterpa-row-hover-bg: rgba(255, 255, 255, 0.07);
+  --betterpa-card-bg: rgba(255, 255, 255, 0.03);
+  --betterpa-scrollbar-width: 8px;
+}
+
+/* --------------------------------------------------------------------------
+   1. Multi-Column Desktop Grid for Home & Hub Lists
+   --------------------------------------------------------------------------
+   Turns stretched single-column mobile lists (Recent Plays, Recently Added,
+   Recent Playlists, Stations) into a multi-column grid on wide windows.
+   -------------------------------------------------------------------------- */
+@media (min-width: 760px) {
+  div.css-g5y9jx:has(> div.css-g5y9jx > div[tabindex="0"] > div[style*="padding: 7px "][style*="flex-direction: row"]) {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(var(--betterpa-grid-min-col), 1fr)) !important;
+    gap: 8px 16px !important;
+    padding: 4px 24px !important;
+  }
+}
+
+/* Desktop card styling & hover states on list items */
+div[tabindex="0"]:has(> div[style*="padding: 7px "][style*="flex-direction: row"]) {
+  border-radius: 10px !important;
+  background-color: var(--betterpa-card-bg) !important;
+  transition: background-color 0.14s ease, transform 0.14s ease !important;
+}
+
+div[tabindex="0"]:has(> div[style*="padding: 7px "][style*="flex-direction: row"]):hover {
+  background-color: var(--betterpa-row-hover-bg) !important;
+}
+
+/* Scale up list item artwork thumbnails from cramped 46px to 54px on desktop */
+div[style*="padding: 7px "][style*="flex-direction: row"] > div[style*="width: 46px"][style*="aspect-ratio: 1 / 1"] {
+  width: 54px !important;
+  border-radius: 6px !important;
+}
+
+/* --------------------------------------------------------------------------
+   2. Fullscreen & Side-by-Side Player Desktop Scaling
+   -------------------------------------------------------------------------- */
+/* Widen the 500px-capped waveform seekbar and volume slider on desktop */
+div[style*="max-width: 500px"],
+div[style*="max-width:500px"] {
+  max-width: 680px !important;
+}
+
+/* Deeper desktop drop-shadow and smoother corners on the main player artwork */
+div[style*="box-shadow: rgba(0, 0, 0, 0.5) 0px 0px 15px 0px"] {
+  box-shadow: 0 22px 55px rgba(0, 0, 0, 0.65) !important;
+  border-radius: 12px !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. Bottom Navigation Bar & Mini-Player Proportions on Wide Monitors
+   -------------------------------------------------------------------------- */
+div[role="tablist"] {
+  max-width: 760px !important;
+  width: 100% !important;
+  margin: 0 auto !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. Expand Narrow Mobile Modal & Dialog Widths on Desktop
+   -------------------------------------------------------------------------- */
+div[style*="max-width: 350px"],
+div[style*="max-width:350px"],
+div[style*="max-width: 400px"],
+div[style*="max-width:400px"] {
+  max-width: 560px !important;
+}
+
+/* --------------------------------------------------------------------------
+   5. Cleaner Desktop Scrollbars
+   -------------------------------------------------------------------------- */
+::-webkit-scrollbar {
+  width: var(--betterpa-scrollbar-width) !important;
+  height: var(--betterpa-scrollbar-width) !important;
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.22) !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4) !important;
+}
