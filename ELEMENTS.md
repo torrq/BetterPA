@@ -11,21 +11,21 @@
 
 Rather than hardcoding chunk hashes, resolve bundle names dynamically from `/index.html` inside the PE64 `.rdata` asset table:
 
-| Role | v4.50.19 Asset Path | Uncompressed Size | Spare @ Brotli q10 | Version-Independent Discovery Method / Anchor |
-| :--- | :--- | :--- | :--- | :--- |
-| **HTML Entrypoint** | `/index.html` | `7,448 B` (`3,158 B` br) | `~117 B` | Exact key `"/index.html"` in Tauri asset table |
-| **Bootstrap Entry** | `/assets/index-DyWjVV-d.js` | `~1.2 KB` | Small | `<script type="module" crossorigin src="/assets/index-*.js">` in `/index.html` |
-| **Core / Store / UI Engine** | `/assets/index-BJP5Glp-.js` | `2,849,642 B` (`778,485 B` br) | **`~52,700 B`** | First `<link rel="modulepreload" as="script" crossorigin href="/assets/index-*.js">` in `/index.html`; contains `"useTabletSideBySideLayout"` and `"IS_BIG_IPAD_SIZE"` |
-| **Player & Play Queue** | `/assets/Player-CYi7FNvM.js` | `~465 KB` (`129,808 B` br) | **`~8,451 B`** | Modulepreload matching `/assets/Player-*.js`; contains `"button-queue-on"` and `"BACK TO","UP NEXT","RELATED"` |
-| **Home Screen** | `/assets/HomeScreen-BsoUMxjY.js` | Preloaded chunk | ~5–10% | Modulepreload matching `/assets/HomeScreen-*.js` |
-| **Hub Carousels** | `/assets/HubList-DYTGDbOO.js` | Preloaded chunk | ~5–10% | Modulepreload matching `/assets/HubList-*.js` |
-| **Track Row & Album Grid Item** | `/assets/TrackItem-UZUqQ-wn.js` | Preloaded chunk | ~5–10% | Modulepreload matching `/assets/TrackItem-*.js`; exports Album/Artist/Track grid & list items |
-| **Track List** | `/assets/TrackItemList-Bq4n75EJ.js` | Preloaded chunk | ~5–10% | Modulepreload matching `/assets/TrackItemList-*.js` |
-| **Virtualized Library Grid Screen** | `/assets/LibraryGridScreen-C_X640GC.js` | Lazy chunk | ~5–10% | Contains `"library-grid"`, `GridLayoutProvider`, and `alphaEndpoint` dot/letter jump bar (`je`) |
-| **RecyclerListView Wrapper** | `/assets/RecyclerListViewWrapper-C_-eWRiu.js` | Preloaded chunk | ~5–10% | Modulepreload matching `/assets/RecyclerListViewWrapper-*.js`; exports `GridLayoutProvider` |
-| **Media / Album / Artist Screen** | `/assets/MediaScreen-DvbJFTCY.js` | Preloaded chunk | ~5–10% | Modulepreload matching `/assets/MediaScreen-*.js` |
-| **Grid Component** | `/assets/Grid-DIBGDJbi.js` | Preloaded chunk | ~5–10% | Modulepreload matching `/assets/Grid-*.js` |
-| **List Sizing & Styles** | `/assets/ListStyles-2AuBPn0S.js` | Preloaded chunk | ~5–10% | Modulepreload matching `/assets/ListStyles-*.js` |
+| Role | v4.50.19 Asset Path | v5 Asset Path | Uncompressed Size | Spare @ Brotli q10 | Version-Independent Discovery Method / Anchor |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **HTML Entrypoint** | `/index.html` | `/index.html` | `7,448 B` (`3,158 B` br) | `~117 B` | Exact key `"/index.html"` in Tauri asset table |
+| **Bootstrap Entry** | `/assets/index-DyWjVV-d.js` | `/assets/index-DyWjVV-d.js` | `~1.2 KB` | Small | `<script type="module" crossorigin src="/assets/index-*.js">` in `/index.html` |
+| **Core / Store / UI Engine** | `/assets/index-BJP5Glp-.js` | `/assets/index-DqV2IXpG.js` | `4,233,154 B` (`1,245,525 B` br) | **`~73,270 B`** | First `<link rel="modulepreload" as="script" crossorigin href="/assets/index-*.js">` in `/index.html`; contains `"useTabletSideBySideLayout"` and `"IS_BIG_IPAD_SIZE"` |
+| **Player & Play Queue** | `/assets/Player-CYi7FNvM.js` | `/assets/Player-C01jN3n2.js` | `~558 KB` (`130,203 B` br) | **`~7,953 B`** | Modulepreload matching `/assets/Player-*.js`; contains `"button-queue-on"` and `"BACK TO","UP NEXT","RELATED"` |
+| **Home Screen** | `/assets/HomeScreen-BsoUMxjY.js` | `/assets/HomeScreen-DVnZIkx-.js` | Preloaded chunk | ~5–10% | Modulepreload matching `/assets/HomeScreen-*.js` |
+| **Hub Carousels** | `/assets/HubList-DYTGDbOO.js` | *(merged/updated)* | Preloaded chunk | ~5–10% | Modulepreload matching `/assets/HubList-*.js` |
+| **Track Row & Album Grid Item** | `/assets/TrackItem-UZUqQ-wn.js` | *(merged/updated)* | Preloaded chunk | ~5–10% | Modulepreload matching `/assets/TrackItem-*.js`; exports Album/Artist/Track grid & list items |
+| **Track List** | `/assets/TrackItemList-Bq4n75EJ.js` | *(merged/updated)* | Preloaded chunk | ~5–10% | Modulepreload matching `/assets/TrackItemList-*.js` |
+| **Virtualized Library Grid Screen** | `/assets/LibraryGridScreen-C_X640GC.js` | `/assets/LibraryGridScreen-CDqyJOtF.js` | Lazy chunk | ~5–10% | Contains `"library-grid"`, `GridLayoutProvider`, and `alphaEndpoint` dot/letter jump bar (`je`) |
+| **RecyclerListView Wrapper** | `/assets/RecyclerListViewWrapper-C_-eWRiu.js` | `/assets/RecyclerListViewWrapper-CV_ArteK.js` | Preloaded chunk | ~5–10% | Modulepreload matching `/assets/RecyclerListViewWrapper-*.js`; exports `GridLayoutProvider` |
+| **Media / Album / Artist Screen** | `/assets/MediaScreen-DvbJFTCY.js` | `/assets/MediaScreen-DxJe-xjR.js` | Preloaded chunk | ~5–10% | Modulepreload matching `/assets/MediaScreen-*.js` |
+| **Grid Component** | `/assets/Grid-DIBGDJbi.js` | `/assets/Grid-CBqSHK0D.js` | Preloaded chunk | ~5–10% | Modulepreload matching `/assets/Grid-*.js` |
+| **CanvasKit / Wasm SkinView** | *(new in v5)* | `/assets/SkinView-DkFi2vq9.js`, `/assets/canvaskit-*.js` | Preloaded chunks | N/A | Added in v5: Wasm CanvasKit skinning engine (`WasmSkinView.web-*.js`) |
 
 ### 1.1 Tauri v2 & Custom Rust IPC Commands (`window.__TAURI_INTERNALS__.invoke`)
 | IPC Command | Arguments | Purpose & Caveats |
@@ -44,16 +44,17 @@ Rather than hardcoding chunk hashes, resolve bundle names dynamically from `/ind
 BetterPA exposes these on `window.__PLEXAMP__` at runtime (`{ store: T, layout: ge, screen: gt, poster: Gs, fs: F }`).
 
 ### 2.1 Platform Flags
-| Concept | v4.50.19 Symbol | Export Alias (in `index`) | Import Alias (in `Player`) | Version-Independent Anchor Signature |
+| Concept | v4.50.19 Symbol | v5 Symbol (in `index`) | v5 Alias (in `Player`) | Version-Independent Anchor Signature |
 | :--- | :--- | :--- | :--- | :--- |
-| **Is Web** (`Platform.OS === "web"`) | `Et` | `n` | `Ke` | `Te.OS==="web"` |
-| **Is iOS** (`Platform.OS === "ios"`) | `gi` | `i` | `ut` | `Te.OS==="ios"` |
-| **Is Desktop** (`macos` or `windows`) | `Lt` | `d` | `st` | `Te.OS==="macos"\|\|Te.OS==="windows"` |
-| **Is iPad** (`Platform.isPad`) | `ks` | `u` | `at` | `"isPad"in Te&&Te.isPad` |
+| **Is Web** (`Platform.OS === "web"`) | `Et` | `ht` | `We` | `Te.OS==="web"` / `Ie.OS==="web"` |
+| **Is iOS** (`Platform.OS === "ios"`) | `gi` | `gt` | `_t` | `Te.OS==="ios"` |
+| **Is Desktop** (`macos` or `windows`) | `Lt` | `_t` | `Ki` | `Te.OS==="macos"\|\|Te.OS==="windows"` |
+| **Is iPad** (`Platform.isPad`) | `ks` | `Fa` | `xa` | `"isPad"in Te&&Te.isPad` |
 
-### 2.2 Root MobX Store (`T`)
+### 2.2 Root MobX Store (`T` / `w` / `hr` in v5)
 - **v4.50.19 Symbol**: `T` (exported as `a as T` from `index-*.js`, imported as `a as T` in `Player-*.js`)
-- **Anchor Signature**: Singleton containing `.player`, `.settings`, `.app`, `.styles`, `.menu`, `.playerRoute`, `.Cast`. Locate via `T.settings.playerSideBySideLayout` or `T.app.useTabletSideBySideLayout`.
+- **v5 Symbol**: `hr as T` in `index-*.js` (instance `w`), imported as `a as A` in `Player-*.js`.
+- **Anchor Signature**: Singleton containing `.player`, `.settings`, `.app`, `.styles`, `.menu`, `.playerRoute`, `.Cast`. Locate via `settings.playerSideBySideLayout` or `app.useTabletSideBySideLayout`.
 
 #### `T.player` (Playback, Queue, Loudness, Visualizer & Sub-stores)
 All property and method names below are **unminified** and stable across Plexamp versions:
@@ -84,14 +85,16 @@ All property and method names below are **unminified** and stable across Plexamp
 
 #### `T.settings` (User Preferences — Unminified Observable Keys)
 - `playerSideBySideLayout`: Boolean (enables tablet/desktop side-by-side player when `useTabletSideBySideLayout` is true)
-- `playerShowPlayQueue`: Boolean (toggles Play Queue visibility in `p0` side-by-side player)
-- `playerShowVolume`: Boolean (shows `da` volume slider inside player)
-- `playerShowCodec`: Boolean (shows `Xi` codec/sample-rate badge)
-- `playerShowYear`: Boolean (appends `(year)` to album line in `qr`)
+- `playerShowPlayQueue`: Boolean (toggles Play Queue visibility in `p0`/`R0` side-by-side player)
+- `playerShowVolume`: Boolean (shows volume slider inside player)
+- `playerShowCodec`: Boolean (shows codec/sample-rate badge)
+- `playerShowYear`: Boolean (appends `(year)` to album line)
 - `playQueueTabIndex`: Integer (`0` = `BACK TO`, `1` = `UP NEXT`, `2` = `RELATED`)
+- `playerSeekBarStyle`: `"smooth"` | `"bars"` | `"line"` (v5 new seekbar style)
+- `playerClassicSkin` / `classicLayout`: Settings for the retro Winamp-style classic layout
 - `gridSize`: `"normal"` | `"large"`
 - `showAlbumCodecBadges`: Boolean
-- `preferFullStars`: Boolean (`true` = 5-star rating widget `gx`, `false` = single-star/half-star widget `vx`)
+- `preferFullStars`: Boolean (`true` = 5-star rating widget, `false` = single-star/half-star widget)
 - `showMusicSkip`: Boolean (shows skip backward/forward buttons on music tracks)
 - `playerSkipBackwardsSeconds` / `playerSkipForwardsSeconds`: Skip step durations
 
@@ -178,25 +181,26 @@ All property and method names below are **unminified** and stable across Plexamp
     - `$7` (`m0`): Portrait Player
 
 ### 4.2 Player Subcomponents (Inside `/assets/Player-*.js`)
-All of these are referenced directly inside `p0` (`SideBySidePlayer`), `d0` (`LandscapePlayer`), and `m0` (`PortraitPlayer`), making them trivial to extract automatically from `p0.prototype.render()`:
+All of these are referenced directly inside `p0`/`R0` (`SideBySidePlayer`), `d0`/`C0` (`LandscapePlayer`), and `m0`/`D0` (`PortraitPlayer`), making them trivial to extract automatically from `p0.prototype.render()`:
 
-| Component Role | v4.50.19 Symbol | Key Props | Version-Independent Anchor Signature |
-| :--- | :--- | :--- | :--- |
-| **Side-by-Side Player** | `p0` (`class Tl`) | `onLayout` | Matched via layout selector regex (`$5`) or `button-queue-on` + `playerShowPlayQueue` |
-| **Artwork / Visualizer / Lyrics 3D Flip** | `Xr` (`class Rl`) | `size={jt.PosterSize()}` | `<Component>,{size:<PosterClass>.PosterSize()}` (`r.jsx(Xr,{size:jt.PosterSize()})`) |
-| **Seekbar Wrapper (Music Waveform / Podcast Scrubber)** | `Yr` | *(none)* | Checks `e.source==="music"` -> renders `<Waveform/>` (`Dl` / `Rct`), else `<PodcastSeekbar/>` (`Wx`) |
-| **Track Metadata Block (Artist / Title / Album)** | `qr` (`class pl`) | `align`, `showAlbum`, `fontSize`, `lineHeight`, `onPress` | Contains `buildForTouchScreen(e)` with `style:{opacity:this.visibility,width:"90%"}` and `Cn` (`scrolling:!0`). **Caveat**: Must patch `width:"90%"` to `"100%"` in side-by-side mode AND wrap `qr` in `style:{flex:1,minWidth:180}` so long track/album titles expand across the full left bar. |
-| **Codec Badge & Star Rating Row** | `Xi` (`class hl`) | `onDragging` | Anchor: `const fl=Ln.create({codecText:{flexDirection:"row",flex:1}})`. Splits codec string (`"FLAC 44.1 kHz"` or `"FLAC 48 / 24"`) on first space into `t` (left of stars `gx`/`vx`) and `n` (right of stars). **Caveat**: In RNW, `flex:1` on `fl.codecText` sets `flex-basis:0%`, which truncates `n` (`"44.1 kHz"` -> `"44.1 ..."`) when `Xi` is placed inside a flex row! Patch `fl.codecText` / `Xi` in side-by-side mode to use `{flexDirection:"row",flexShrink:0}` and `marginHorizontal:0` so `t` and `n` never truncate. |
-| **Transport Controls Row (Repeat / Prev / Play / Next / Shuffle)** | `ji` (`class cx`, styles `Bi`) | `plain`, `extraControls`, `noLeftPadding` | Uses `Bi.playContainer` (`width:60,height:60,borderRadius:30`), renders `Mc`/`Ec` (repeat) & `yc`/`Tc` (shuffle) |
-| **Car Mode Large Controls** | `Ic` (`c0`) | *(none)* | Uses `80x80` buttons (`button-Pause`, `button-Play`, `button-SkipForward`) |
-| **Volume Slider & Mute Control** | `da` | `style` | Checked alongside `T.settings.playerShowVolume` |
-| **Play Queue Panel Wrapper** | `$r` -> `a0` (`s0`) | *(none)* | Renders `Cc` tab container with `tabs:["BACK TO","UP NEXT","RELATED"]` |
-| **Lyrics Toggle Button** | `Fl` | *(none)* | Toggles `lyricPlayerStore.visible` |
-| **Cast / Remote Player Button** | `Ol` | *(none)* | Opens `type:"remote-player"` menu |
-| **Guest DJ Button** | `bc` (`ux`) | `size` | Opens `type:"deeJay"` menu (`icon:"button-dj"`) |
-| **Context Menu (`...`) Button** | `Ws` | `size={16}` | Calls `T.menu.popup(e,{type:"player-track",...})` |
-| **Queue Toggle Button** | `f0` (`h0`) | *(none)* | Toggles `T.settings.playerShowPlayQueue`, icon `"button-queue-on"` / `"button-queue"` |
-| **Collapse / Dismiss Player Button** | `Ac` | `extraMargin` | Calls `T.player.hideFullscreenPlayer()`, icon `"chevron-down"` |
+| Component Role | v4.50.19 Symbol | v5 Symbol | Key Props | Version-Independent Anchor Signature |
+| :--- | :--- | :--- | :--- | :--- |
+| **Side-by-Side Player** | `p0` (`class Tl`) | `R0` (`class Il`) | `onLayout` | Matched via layout selector regex or `button-queue-on` + `playerShowPlayQueue` |
+| **Artwork / Visualizer / Lyrics 3D Flip** | `Xr` (`class Rl`) | `or` | `size={Zt.PosterSize()}` | `<Component>,{size:<PosterClass>.PosterSize()}` |
+| **Responsive Auto-Sizing Poster** | *(none)* | `d0` | *(none)* | Measures container layout width/height via `onLayout` and renders `or` at `min(width, height)` |
+| **Seekbar Wrapper (Waveform / Scrubber)** | `Yr` | `er` (`uwt`) | `maxWidth`, `compact` | Checks `e.source==="music"` -> renders Waveform (`b9e`/`cI`), else Scrubber. In v5, accepts `maxWidth` prop and respects `playerSeekBarStyle` (`"smooth"`, `"bars"`, `"line"`). |
+| **Track Metadata Block (Artist / Title / Album)** | `qr` (`class pl`) | `Li` (`class Ml`) | `align`, `showAlbum`, `fontSize`, `lineHeight`, `onPress` | Contains `buildForTouchScreen(e)` with `style:{opacity:this.visibility,width:"90%"}`. **Caveat**: Must patch `width:"90%"` to `"100%"` in side-by-side mode AND wrap in `style:{flex:1,minWidth:0}` so long track/album titles expand across the full left bar. |
+| **Codec Badge & Star Rating Row** | `Xi` (`class hl`) | `Pi` (`class yl`) | `onDragging` | Uses `codecText:{flexDirection:"row",flex:1}`. Splits codec string (`"FLAC 44.1 kHz"` or `"FLAC 48 / 24"`) on space. In v5, patch `Wi.codecText` and `Pi.render()` to use `flexShrink:0` so sample rate text never truncates. |
+| **Transport Controls Row (Repeat / Prev / Play / Next / Shuffle)** | `ji` (`class cx`, styles `Bi`) | `Zn` | `plain`, `extraControls`, `noLeftPadding` | Renders repeat, prev, play/pause, next, shuffle |
+| **Car Mode Large Controls** | `Ic` (`c0`) | `Yc` | *(none)* | Uses `80x80` buttons (`button-Pause`, `button-Play`, `button-SkipForward`) |
+| **Volume Slider & Mute Control** | `da` | `$r` | `showSpeakerControl` | Checked alongside `settings.playerShowVolume` |
+| **Play Queue Panel Wrapper** | `$r` -> `a0` (`s0`) | `Ui` | `audiobook`, `onDragging` | Renders Play Queue tabs (`"BACK TO"`, `"UP NEXT"`, `"RELATED"`) |
+| **Lyrics Toggle Button** | `Fl` | `Sa` | `style` | Toggles `lyricPlayerStore.visible` |
+| **Cast / Remote Player Button** | `Ol` | `ya` | `style` | Opens `type:"remote-player"` menu |
+| **Guest DJ Button** | `bc` (`ux`) | `Ra` | `outerStyle` | Opens `type:"deeJay"` menu (`icon:"button-dj"`) |
+| **Context Menu (`...`) Button** | `Ws` | `Br` | `size={16}` | Calls `menu.popup(e,{type:"player-track",...})` |
+| **Queue Toggle Button** | `f0` (`h0`) | `Gc` (`u0`) | *(none)* | Toggles `settings.playerShowPlayQueue`, icon `"button-queue-on"` / `"button-queue"` |
+| **Collapse / Dismiss Player Button** | `Ac` | `Nc` | `onPress` | Calls `player.hideFullscreenPlayer()`, icon `"chevron-down"` |
 
 ### 4.3 Play Queue Subcomponents (Inside `/assets/Player-*.js`)
 | Component Role | v4.50.19 Symbol | Version-Independent Anchor Signature |

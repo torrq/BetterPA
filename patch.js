@@ -222,7 +222,7 @@ function findBundleKeyByPrefix(exeBuf, prefixStr, minBytes = 1000) {
  * Patch the main JS bundle (/assets/index-*.js) with:
  *  1. Desktop layout unlocks (IS_BIG_IPAD_SIZE enabled on desktop >700px)
  *  2. Edge-to-edge maximum left-side artwork in side-by-side mode (PosterSize = min(width*0.52, height-104), RoundedPoster = false)
- *  3. Full-width bottom seekbar/waveform in side-by-side mode
+ *  3. Full-width bottom seekbar/waveform in side-by-side mode (supporting classic, smooth, bars & line seekbars)
  *  4. BetterPA live CSS/JS loader + shortcuts
  */
 function buildPatchedMainBundle(originalJs) {
@@ -233,47 +233,52 @@ function buildPatchedMainBundle(originalJs) {
   // on the right of LibraryGridScreen ("Recently Added in Music").
 
   // 1. Edge-to-edge square corners on the side-by-side full-height left artwork
-  const origRounded = "static RoundedPoster(){return!0}";
-  const newRounded = "static RoundedPoster(){return!(T.app.useTabletSideBySideLayout&&rA.landscape)}";
-  if (js.includes(origRounded)) {
-    js = js.replace(origRounded, newRounded);
+  const roundedRe = /static RoundedPoster\(\)\{return!0\}/;
+  if (roundedRe.test(js)) {
+    js = js.replace(
+      roundedRe,
+      "static RoundedPoster(){return!((typeof w!=='undefined'?w:typeof T!=='undefined'?T:this).app?.useTabletSideBySideLayout&&this.landscape)}"
+    );
     console.log("Unlocked edge-to-edge square poster corners in side-by-side landscape mode");
   }
 
   // 2. Maximum left-side artwork size in Gs.PosterSize() (fills full height above 104px bottom bar)
-  const origSideBySidePoster = "if(T.app.useTabletSideBySideLayout)return Math.round(gt.screenHeight/2.5);";
-  const newSideBySidePoster =
-    "if(T.app.useTabletSideBySideLayout)return Math.round(Math.min(gt.screenWidth*.52,gt.screenHeight-104));";
-  if (js.includes(origSideBySidePoster)) {
-    js = js.replace(origSideBySidePoster, newSideBySidePoster);
+  const sideBySidePosterRe = /if\(([\w$]+)\.app\.useTabletSideBySideLayout\)return Math\.round\(([\w$]+)\.screenHeight\/2\.5\);/;
+  if (sideBySidePosterRe.test(js)) {
+    js = js.replace(sideBySidePosterRe, (match, store, screen) => {
+      return `if(${store}.app.useTabletSideBySideLayout)return Math.round(Math.min(${screen}.screenWidth*.52,${screen}.screenHeight-104));`;
+    });
     console.log("Unlocked maximum full-height left-side artwork in Gs.PosterSize()");
   }
 
-  const origWebPortraitPoster =
-    "if(Et)return i<gt.fullPosterWidth||a>gt.tallestPlayerHeight&&i<gt.widestFullPosterWidth?i:Math.min(i-70,300);";
-  const newWebPortraitPoster =
-    "if(Et)return i<gt.fullPosterWidth||a>gt.tallestPlayerHeight&&i<gt.widestFullPosterWidth?i:Math.min(i-70,a-380,540);";
-  if (js.includes(origWebPortraitPoster)) {
-    js = js.replace(origWebPortraitPoster, newWebPortraitPoster);
+  const webPortraitRe = /if\(([\w$]+)\)return i<([\w$]+)\.fullPosterWidth\|\|([\w$]+)>\2\.tallestPlayerHeight&&i<\2\.widestFullPosterWidth\?i:Math\.min\(i-70,300\);/;
+  if (webPortraitRe.test(js)) {
+    js = js.replace(webPortraitRe, (match, isWeb, screen, heightVar) => {
+      return `if(${isWeb})return i<${screen}.fullPosterWidth||${heightVar}>${screen}.tallestPlayerHeight&&i<${screen}.widestFullPosterWidth?i:Math.min(i-70,${heightVar}-380,540);`;
+    });
     console.log("Unlocked larger portrait desktop player artwork in Gs.PosterSize()");
   }
 
   // 3. Full-width waveform seekbar in side-by-side landscape mode
-  const origSeekbarMax = "style:[Oct.container,{opacity:this.visibility,maxWidth:ks?700:500}]";
-  const newSeekbarMax =
-    'style:[Oct.container,{opacity:this.visibility,maxWidth:T.app.useTabletSideBySideLayout&&gt.landscape?"100%":ks?700:500}]';
-  if (js.includes(origSeekbarMax)) {
-    js = js.replace(origSeekbarMax, newSeekbarMax);
-    console.log("Unlocked 100% full-width waveform seekbar in Rct.render()");
+  const seekbarMaxRe = /(style:\[[\w$]+\.container,\{opacity:this\.visibility,maxWidth:)(this\.props\.maxWidth\?\?\()?([\w$]+)\?700:500(\)?\}\])/;
+  if (seekbarMaxRe.test(js)) {
+    js = js.replace(seekbarMaxRe, (match, prefix, propCheck, isPad, suffix) => {
+      const storeRef = `(typeof w!=='undefined'?w:T)`;
+      const screenRef = `(typeof $e!=='undefined'?$e:gt)`;
+      const fallback = propCheck
+        ? `${propCheck}(${storeRef}.app.useTabletSideBySideLayout&&${screenRef}.landscape?"100%":${isPad}?700:500))`
+        : `(${storeRef}.app.useTabletSideBySideLayout&&${screenRef}.landscape?"100%":${isPad}?700:500)`;
+      return `${prefix}${fallback}${suffix.endsWith("}]") ? "}]" : "}"}`;
+    });
+    console.log("Unlocked 100% full-width waveform seekbar in Rct/b9e.render()");
   }
 
   // 4. Lower height threshold for side-by-side layout from 680px to 350px on desktop
-  const origSideBySideGetter =
-    "get useTabletSideBySideLayout(){return this.rootStore.settings.playerSideBySideLayout?Et&&rA.screenWidth>500&&rA.screenHeight>680?!0:OAe():!1}";
-  const newSideBySideGetter =
-    "get useTabletSideBySideLayout(){return this.rootStore.settings.playerSideBySideLayout!==!1&&(Et&&rA.screenWidth>500&&rA.screenHeight>350?!0:OAe())}";
-  if (js.includes(origSideBySideGetter)) {
-    js = js.replace(origSideBySideGetter, newSideBySideGetter);
+  const sideBySideGetterRe = /get useTabletSideBySideLayout\(\)\{return this\.rootStore\.settings\.playerSideBySideLayout\?([\w$]+)&&([\w$]+)\.screenWidth>500&&([\w$]+)\.screenHeight>680\?!0:([\w$]+)\(\):!1\}/;
+  if (sideBySideGetterRe.test(js)) {
+    js = js.replace(sideBySideGetterRe, (match, isWeb, screenW, screenH, isTablet) => {
+      return `get useTabletSideBySideLayout(){return this.rootStore.settings.playerSideBySideLayout!==!1&&(${isWeb}&&${screenW}.screenWidth>500&&${screenH}.screenHeight>350?!0:${isTablet}())}`;
+    });
     console.log("Lowered side-by-side landscape height threshold from 680px to 350px");
   }
 
@@ -291,7 +296,12 @@ function buildPatchedMainBundle(originalJs) {
   }
 
   try {
-    window.__PLEXAMP__ = { store: T, layout: ge, screen: gt, poster: Gs, fs: F };
+    var _store = typeof w !== "undefined" ? w : typeof hr !== "undefined" ? hr : typeof T !== "undefined" ? T : null;
+    var _layout = typeof ae !== "undefined" ? ae : typeof i8t !== "undefined" ? i8t : typeof ge !== "undefined" ? ge : null;
+    var _screen = typeof na !== "undefined" ? na : typeof gt !== "undefined" ? gt : null;
+    var _poster = typeof wo !== "undefined" ? wo : typeof Gs !== "undefined" ? Gs : null;
+    var _fs = typeof $P !== "undefined" ? $P : typeof F !== "undefined" ? F : null;
+    window.__PLEXAMP__ = { store: _store, layout: _layout, screen: _screen, poster: _poster, fs: _fs };
   } catch (e) {}
 
   log("Initializing BetterPA runtime...");
@@ -449,75 +459,122 @@ function buildPatchedMainBundle(originalJs) {
 
 /**
  * Patch the Player JS bundle (/assets/Player-*.js) to create the split-screen layout:
- *  - Top-Left: Edge-to-edge full-height square Album Artwork (Xr)
- *  - Top-Right: Scrollable Play Queue / Up Next / Related tracks ($r, up to 50 items)
+ *  - Top-Left: Edge-to-edge full-height square Album Artwork (Xr/or)
+ *  - Top-Right: Scrollable Play Queue / Up Next / Related tracks ($r/Ui, up to 50 items)
  *  - Bottom Bar (104px, 100% width): Wide Track/Artist/Album info + full uncut Codec/Stars on left,
- *    Transport controls in center, Volume + Utility buttons on right, and 100% full-width Waveform Seekbar.
+ *    Transport controls in center, Volume + Utility buttons on right, and 100% full-width Waveform Seekbar (supporting smooth, bars & line).
  */
 function buildPatchedPlayerBundle(originalPlayerJs) {
   let js = originalPlayerJs;
 
-  // 1. Enable scrolling inside PlayQueue ScrollViewWithFooter (Lc)
-  const origScroll = "const Lc=$.forwardRef(({children:i,...e},t)=>v.jsxs(od,{ref:t,...e,scrollEnabled:!1,children:[i,e.footer]}));";
-  const newScroll = "const Lc=$.forwardRef(({children:i,...e},t)=>v.jsxs(od,{ref:t,...e,scrollEnabled:!0,children:[i,e.footer]}));";
-  if (js.includes(origScroll)) {
-    js = js.replace(origScroll, newScroll);
-    console.log("Enabled vertical mouse-wheel scrolling in PlayQueue (Lc)");
+  // 1. Enable scrolling inside PlayQueue ScrollViewWithFooter (Lc/Hc)
+  const scrollRe = /scrollEnabled:!1,children:\[([\w$]+),([\w$]+)\.footer\]/;
+  if (scrollRe.test(js)) {
+    js = js.replace(scrollRe, "scrollEnabled:!0,children:[$1,$2.footer]");
+    console.log("Enabled vertical mouse-wheel scrolling in PlayQueue (Lc/Hc)");
   }
 
   // 2. Increase visible tracks in side-by-side PlayQueue from ~16 to 50
-  const origMaxItems = "l=Math.max(i.length,Math.floor((fe.screenHeight-$n()+30)/e)-(fe.landscape?1:0));";
-  const newMaxItems =
-    "l=T.app.useTabletSideBySideLayout&&fe.landscape?50:Math.max(i.length,Math.floor((fe.screenHeight-$n()+30)/e)-(fe.landscape?1:0));";
-  if (js.includes(origMaxItems)) {
-    js = js.replace(origMaxItems, newMaxItems);
+  const visibleTracksRe = /([\w$]+=)(Math\.max\([\w$]+\.length,Math\.floor\(\([\w$]+\.screenHeight-[\w$]+\(\)\+30\)\/[\w$]+\)-\([\w$]+\.landscape\?1:0\)\);)/;
+  if (visibleTracksRe.test(js)) {
+    js = js.replace(visibleTracksRe, (match, assign, origCalc) => {
+      return `${assign}(typeof A!=="undefined"?A:T).app.useTabletSideBySideLayout&&(typeof he!=="undefined"?he:fe).landscape?50:${origCalc}`;
+    });
     console.log("Increased side-by-side PlayQueue visible track count to 50");
   }
 
-  // 3. Fix Xi (Codec + Stars + Sample Rate) so it never truncates ("44.1 ...") in side-by-side mode
+  // 3. Fix Xi/Pi (Codec + Stars + Sample Rate) so it never truncates ("44.1 ...") in side-by-side mode
+  const codecTextRe = /codecText:\{flexDirection:"row",flex:1\}/;
+  if (codecTextRe.test(js)) {
+    js = js.replace(
+      codecTextRe,
+      'codecText:{flexDirection:"row",flex:(typeof A!=="undefined"?A:T).app.useTabletSideBySideLayout&&(typeof he!=="undefined"?he:fe).landscape?void 0:1,flexShrink:0}'
+    );
+    console.log("Unlocked full uncut codec & sample-rate in stylesheet (v5)");
+  }
+  const piRenderRe = /(children:!![\w$]+&&[\w$]+\.jsxs\([\w$]+,\{halign:"center",valign:"center",style:)\{flex:1,marginHorizontal:([\w$]+)\.MARGIN\}(,children:\[this\.renderCodec\([\w$]+\))/;
+  if (piRenderRe.test(js)) {
+    js = js.replace(piRenderRe, (match, prefix, marginVar, suffix) => {
+      return `${prefix}(typeof A!=="undefined"?A:T).app.useTabletSideBySideLayout&&(typeof he!=="undefined"?he:fe).landscape?{flexShrink:0}:{flex:1,marginHorizontal:${marginVar}.MARGIN}${suffix}`;
+    });
+    console.log("Unlocked full uncut codec & sample-rate width in Xi/Pi.render() (v5)");
+  }
   const origXiRender =
     'v.jsx(Ie,{halign:"center",style:{width:"100%"},children:!!t&&v.jsxs(Ie,{halign:"center",valign:"center",style:{flex:1,marginHorizontal:ae.MARGIN},children:[v.jsx(Yn,{weight:"light",text:t,style:fl.codecText,align:"right"}),T.settings.preferFullStars!==!1?v.jsx(gx,{onDragging:this.props.onDragging}):v.jsx(vx,{}),v.jsx(Yn,{weight:"light",text:n,style:fl.codecText})]})})';
   const newXiRender =
     'v.jsx(Ie,{halign:"center",style:T.app.useTabletSideBySideLayout&&fe.landscape?{flexShrink:0}:{width:"100%"},children:!!t&&v.jsxs(Ie,{halign:"center",valign:"center",style:T.app.useTabletSideBySideLayout&&fe.landscape?{flexShrink:0}:{flex:1,marginHorizontal:ae.MARGIN},children:[v.jsx(Yn,{weight:"light",text:t,style:T.app.useTabletSideBySideLayout&&fe.landscape?{flexShrink:0}:fl.codecText,align:"right"}),T.settings.preferFullStars!==!1?v.jsx(gx,{onDragging:this.props.onDragging}):v.jsx(vx,{}),v.jsx(Yn,{weight:"light",text:n,style:T.app.useTabletSideBySideLayout&&fe.landscape?{flexShrink:0}:fl.codecText})]})})';
   if (js.includes(origXiRender)) {
     js = js.replace(origXiRender, newXiRender);
-    console.log("Unlocked full uncut codec & sample-rate width in Xi.render()");
+    console.log("Unlocked full uncut codec & sample-rate width in Xi.render() (legacy)");
   }
 
-  // 4. Fix qr (Artist / Title / Album) so it uses 100% of its container width instead of clipping at 90%
+  // 4. Fix qr/Li (Artist / Title / Album) so it uses 100% of its container width instead of clipping at 90%
   const origQrWidth = 'style:{opacity:this.visibility,width:"90%"}';
-  const newQrWidth = 'style:{opacity:this.visibility,width:T.app.useTabletSideBySideLayout&&fe.landscape?"100%":"90%"}';
   if (js.includes(origQrWidth)) {
-    js = js.replace(origQrWidth, newQrWidth);
-    console.log("Unlocked 100% width for Artist / Title / Album metadata block (qr)");
+    js = js.replace(
+      origQrWidth,
+      'style:{opacity:this.visibility,width:(typeof A!=="undefined"?A:T).app.useTabletSideBySideLayout&&(typeof he!=="undefined"?he:fe).landscape?"100%":"90%"}'
+    );
+    console.log("Unlocked 100% width for Artist / Title / Album metadata block (qr/Li)");
   }
 
-  // 5. Replace p0 (Side-by-Side Landscape Player) with Maximum Left Artwork + Right Queue + Full-Width Bottom Bar
-  const p0Start = js.indexOf("let p0=Pe(Tl=class extends $.Component{");
-  const p0End = js.indexOf("var Al;let m0=");
-  if (p0Start === -1 || p0End === -1) {
-    throw new Error("Could not locate p0 class boundaries in Player bundle.");
+  // 5. Replace side-by-side component (p0 / R0) with Maximum Left Artwork + Right Queue + Full-Width Bottom Bar
+  const p0Regex = /let\s+([A-Za-z0-9_$]+)=([A-Za-z0-9_$]+)\(([A-Za-z0-9_$]+)=class\s+extends\s+([A-Za-z0-9_$]+)\.Component\{constructor\([^)]*\)\{super\([^)]*\)[^}]*playerShowPlayQueue/;
+  const p0Match = js.match(p0Regex);
+  if (!p0Match) {
+    throw new Error("Could not locate side-by-side component in Player bundle.");
+  }
+  const varName = p0Match[1];
+  const obsName = p0Match[2];
+  const className = p0Match[3];
+  const reactName = p0Match[4];
+
+  let endPattern = "})]})}})||" + className + ";";
+  let endIdx = js.indexOf(endPattern, p0Match.index);
+  if (endIdx === -1) {
+    endPattern = "})})}})||" + className + ";";
+    endIdx = js.indexOf(endPattern, p0Match.index);
+  }
+  if (endIdx === -1) {
+    throw new Error("Could not locate end of side-by-side component in Player bundle.");
   }
 
-  const newP0 = `let p0=Pe(Tl=class extends $.Component{constructor(...e){super(...e),T.settings.playerShowPlayQueue===!1&&(T.settings.playerShowPlayQueue=!0),this.showQueue=new vt.Value(T.settings.playerShowPlayQueue?1:0),this.playQueueOpacity=new vt.Value(T.settings.playerShowPlayQueue?1:0),this.playQueueTranslation=new vt.Value(0),this.playerTranslation=new vt.Value(0),this.observerSize=void 0,this.observer=void 0,this.onDismiss=()=>{T.player.hideFullscreenPlayer()}}playerWidth(){return jt.PosterSize()}componentDidMount(){const e=(fe.screenWidth-this.playerWidth())/2;this.showQueue.setValue(T.settings.playerShowPlayQueue?1:0),this.playerTranslation.setValue(T.settings.playerShowPlayQueue?0:e),vt.spring(this.playerTranslation,{toValue:this.showQueue.interpolate({inputRange:[0,1],outputRange:[e,0]}),useNativeDriver:!0}).start(),this.observerSize=qt(()=>{const t=dd(()=>T.settings.playerShowPlayQueue);this.playerTranslation.setValue(t?0:(fe.screenWidth-this.playerWidth())/2)}),this.observer=qt(()=>{this.showQueue.setValue(T.settings.playerShowPlayQueue?1:0),T.settings.playerShowPlayQueue?(this.playQueueTranslation.setValue(0),vt.timing(this.playQueueOpacity,{toValue:1,delay:150,useNativeDriver:!0,duration:150}).start()):vt.timing(this.playQueueOpacity,{toValue:0,useNativeDriver:!0,duration:150}).start(()=>{this.playQueueTranslation.setValue(fe.screenHeight)})})}componentWillUnmount(){this.observerSize?.(),this.observer?.()}render(){const{podcast:e,audiobook:t,driving:n,longFormAudio:r,volumeControllable:s}=this.props,o=Ke?fe.screenHeight-$n():fe.screenHeight-Nl()-$n(),bH=104,topH=Math.max(200,o-bH);return v.jsxs(Ye,{flex:!0,style:{width:"100%",height:o},children:[v.jsxs(Ie,{valign:"center",style:{width:"100%",height:topH,overflow:"hidden"},children:[v.jsx(bl,{style:{zIndex:100,width:this.playerWidth(),height:topH,transform:[{translateX:this.playerTranslation}]},halign:"center",valign:"center",children:v.jsx(Xr,{})}),v.jsx(bl,{flex:!0,style:{marginLeft:0,opacity:this.playQueueOpacity,transform:[{translateY:this.playQueueTranslation}],height:topH,backgroundColor:"rgba(10,10,12,0.55)",borderLeftWidth:1,borderLeftColor:"rgba(255,255,255,0.07)"},children:v.jsx($r,{audiobook:t,onDragging:this.props.onDragging})})]}),v.jsxs(Ye,{style:{width:"100%",height:bH,backgroundColor:"rgba(12,12,14,0.94)",borderTopWidth:1,borderTopColor:"rgba(255,255,255,0.09)",paddingHorizontal:24,justifyContent:"center",zIndex:200},children:[this.props.loading&&v.jsx(qi,{}),v.jsxs(Ie,{valign:"center",style:{width:"100%",height:54,justifyContent:"space-between"},children:[v.jsxs(Ie,{valign:"center",style:{flex:1,minWidth:0,paddingRight:16},children:[v.jsx(Ye,{style:{flex:1,minWidth:0},children:v.jsx(qr,{align:"left",showAlbum:!0,navigation:this.props.navigation,onPress:this.props.onContextMenu,fontSize:14,lineHeight:17})}),T.settings.playerShowCodec&&v.jsx(Ze,{style:{marginLeft:16,marginRight:4,flexShrink:0},children:v.jsx(Xi,{onDragging:this.props.onDragging})})]}),v.jsx(Ie,{valign:"center",halign:"center",style:{flexShrink:0},children:v.jsx(ji,{plain:Ke,extraControls:!0})}),v.jsxs(Ie,{valign:"center",halign:"right",style:{flex:1,minWidth:0,paddingLeft:16,justifyContent:"flex-end"},children:[T.settings.playerShowVolume&&s&&v.jsx(Ie,{style:{width:155,marginRight:12},children:v.jsx(da,{showSpeakerControl:!0})}),v.jsx(Fl,{style:{marginRight:10}}),v.jsx(Ol,{style:{marginRight:8}}),!r&&!T.player.isOfflinePlayQueue&&v.jsx(bc,{outerStyle:{marginLeft:6,marginRight:6}}),v.jsx(Ws,{size:16,padding:4,onPress:this.props.onContextMenu,style:{margin:10,backgroundColor:"transparent"}}),v.jsx(f0,{}),Ke&&v.jsx(Ac,{onPress:this.onDismiss})]})]}),v.jsx(Ie,{valign:"center",halign:"center",style:{width:"100%",height:38},children:v.jsx(Yr,{driving:n,audiobook:t,podcast:e})})]})]})}})||Tl;`;
-
-  js = js.slice(0, p0Start) + newP0 + js.slice(p0End);
-  console.log("Patched p0 in Player bundle with Split-Screen Left Artwork + Right Queue + Full-Width Bottom Bar");
-
-  // 6. Prioritize side-by-side layout (p0) over card mode (l0) when landscape & useTabletSideBySideLayout are active
-  const origLayoutSelect = "const o=fe.card?l0:fe.landscape?(T.app.useTabletSideBySideLayout?p0:d0):m0";
-  const newLayoutSelect = "const o=fe.landscape&&T.app.useTabletSideBySideLayout?p0:fe.card?l0:fe.landscape?d0:m0";
-  if (js.includes(origLayoutSelect)) {
-    js = js.replace(origLayoutSelect, newLayoutSelect);
-    console.log("Prioritized side-by-side split-screen layout (p0) over card aspect-ratio override");
+  const isV5 = js.includes('from"./index-') || js.includes('from "./index-') || varName === "R0";
+  let newSideBySide;
+  if (isV5) {
+    newSideBySide = `let ${varName}=${obsName}(${className}=class extends ${reactName}.Component{constructor(...e){super(...e),A.settings.playerShowPlayQueue===!1&&(A.settings.playerShowPlayQueue=!0),this.showQueue=new rt.Value(A.settings.playerShowPlayQueue?1:0),this.playQueueOpacity=new rt.Value(A.settings.playerShowPlayQueue?1:0),this.playQueueTranslation=new rt.Value(0),this.playerTranslation=new rt.Value(0),this.observerSize=void 0,this.observer=void 0,this.onDismiss=()=>{A.player.hideFullscreenPlayer()}}playerWidth(){return Zt.PosterSize()}componentDidMount(){const e=(he.screenWidth-this.playerWidth())/2;this.showQueue.setValue(A.settings.playerShowPlayQueue?1:0),this.playerTranslation.setValue(A.settings.playerShowPlayQueue?0:e),rt.spring(this.playerTranslation,{toValue:this.showQueue.interpolate({inputRange:[0,1],outputRange:[e,0]}),useNativeDriver:!0}).start(),this.observerSize=an(()=>{const t=Ld(()=>A.settings.playerShowPlayQueue);this.playerTranslation.setValue(t?0:(he.screenWidth-this.playerWidth())/2)}),this.observer=an(()=>{this.showQueue.setValue(A.settings.playerShowPlayQueue?1:0),A.settings.playerShowPlayQueue?(this.playQueueTranslation.setValue(0),rt.timing(this.playQueueOpacity,{toValue:1,delay:150,useNativeDriver:!0,duration:150}).start()):rt.timing(this.playQueueOpacity,{toValue:0,useNativeDriver:!0,duration:150}).start(()=>{this.playQueueTranslation.setValue(he.screenHeight)})})}componentWillUnmount(){this.observerSize?.(),this.observer?.()}render(){const{podcast:e,audiobook:t,driving:n,longFormAudio:r,volumeControllable:s}=this.props,o=We?he.screenHeight-Ln():he.screenHeight-$l()-Ln(),bH=104,topH=Math.max(200,o-bH);return g.jsxs(Qe,{flex:!0,style:{width:"100%",height:o},children:[g.jsxs(Pe,{valign:"center",style:{width:"100%",height:topH,overflow:"hidden"},children:[g.jsx(Ul,{style:{zIndex:100,width:this.playerWidth(),height:topH,transform:[{translateX:this.playerTranslation}]},halign:"center",valign:"center",children:g.jsx(or,{})}),g.jsx(Ul,{flex:!0,style:{marginLeft:0,opacity:this.playQueueOpacity,transform:[{translateY:this.playQueueTranslation}],height:topH,backgroundColor:"rgba(10,10,12,0.55)",borderLeftWidth:1,borderLeftColor:"rgba(255,255,255,0.07)"},children:g.jsx(Ui,{audiobook:t,onDragging:this.props.onDragging})})]}),g.jsxs(Qe,{style:{width:"100%",height:bH,backgroundColor:"rgba(12,12,14,0.94)",borderTopWidth:1,borderTopColor:"rgba(255,255,255,0.09)",paddingHorizontal:24,justifyContent:"center",zIndex:200},children:[this.props.loading&&g.jsx(Ji,{}),g.jsxs(Pe,{valign:"center",style:{width:"100%",height:54,justifyContent:"space-between"},children:[g.jsxs(Pe,{valign:"center",style:{flex:1,minWidth:0,paddingRight:16},children:[g.jsx(Qe,{style:{flex:1,minWidth:0},children:g.jsx(Li,{align:"left",showAlbum:!0,navigation:this.props.navigation,onPress:this.props.onContextMenu,fontSize:14,lineHeight:17})}),A.settings.playerShowCodec&&g.jsx(je,{style:{marginLeft:16,marginRight:4,flexShrink:0},children:g.jsx(Pi,{onDragging:this.props.onDragging})})]}),g.jsx(Pe,{valign:"center",halign:"center",style:{flexShrink:0},children:g.jsx(Zn,{plain:We,extraControls:!0})}),g.jsxs(Pe,{valign:"center",halign:"right",style:{flex:1,minWidth:0,paddingLeft:16,justifyContent:"flex-end"},children:[A.settings.playerShowVolume&&s&&g.jsx(Pe,{style:{width:155,marginRight:12},children:g.jsx($r,{showSpeakerControl:!0})}),g.jsx(Sa,{style:{marginRight:10}}),g.jsx(ya,{style:{marginRight:8}}),!r&&!A.player.isOfflinePlayQueue&&g.jsx(Ra,{outerStyle:{marginLeft:6,marginRight:6}}),g.jsx(Br,{size:16,padding:4,onPress:this.props.onContextMenu,style:{margin:10,backgroundColor:"transparent"}}),g.jsx(Gc,{}),We&&g.jsx(Nc,{onPress:this.onDismiss})]})]}),g.jsx(Pe,{valign:"center",halign:"center",style:{width:"100%",height:38},children:g.jsx(er,{driving:n,audiobook:t,podcast:e})})]})]})}})||${className};`;
+  } else {
+    newSideBySide = `let ${varName}=${obsName}(${className}=class extends ${reactName}.Component{constructor(...e){super(...e),T.settings.playerShowPlayQueue===!1&&(T.settings.playerShowPlayQueue=!0),this.showQueue=new vt.Value(T.settings.playerShowPlayQueue?1:0),this.playQueueOpacity=new vt.Value(T.settings.playerShowPlayQueue?1:0),this.playQueueTranslation=new vt.Value(0),this.playerTranslation=new vt.Value(0),this.observerSize=void 0,this.observer=void 0,this.onDismiss=()=>{T.player.hideFullscreenPlayer()}}playerWidth(){return jt.PosterSize()}componentDidMount(){const e=(fe.screenWidth-this.playerWidth())/2;this.showQueue.setValue(T.settings.playerShowPlayQueue?1:0),this.playerTranslation.setValue(T.settings.playerShowPlayQueue?0:e),vt.spring(this.playerTranslation,{toValue:this.showQueue.interpolate({inputRange:[0,1],outputRange:[e,0]}),useNativeDriver:!0}).start(),this.observerSize=qt(()=>{const t=dd(()=>T.settings.playerShowPlayQueue);this.playerTranslation.setValue(t?0:(fe.screenWidth-this.playerWidth())/2)}),this.observer=qt(()=>{this.showQueue.setValue(T.settings.playerShowPlayQueue?1:0),T.settings.playerShowPlayQueue?(this.playQueueTranslation.setValue(0),vt.timing(this.playQueueOpacity,{toValue:1,delay:150,useNativeDriver:!0,duration:150}).start()):vt.timing(this.playQueueOpacity,{toValue:0,useNativeDriver:!0,duration:150}).start(()=>{this.playQueueTranslation.setValue(fe.screenHeight)})})}componentWillUnmount(){this.observerSize?.(),this.observer?.()}render(){const{podcast:e,audiobook:t,driving:n,longFormAudio:r,volumeControllable:s}=this.props,o=Ke?fe.screenHeight-$n():fe.screenHeight-Nl()-$n(),bH=104,topH=Math.max(200,o-bH);return v.jsxs(Ye,{flex:!0,style:{width:"100%",height:o},children:[v.jsxs(Ie,{valign:"center",style:{width:"100%",height:topH,overflow:"hidden"},children:[v.jsx(bl,{style:{zIndex:100,width:this.playerWidth(),height:topH,transform:[{translateX:this.playerTranslation}]},halign:"center",valign:"center",children:v.jsx(Xr,{})}),v.jsx(bl,{flex:!0,style:{marginLeft:0,opacity:this.playQueueOpacity,transform:[{translateY:this.playQueueTranslation}],height:topH,backgroundColor:"rgba(10,10,12,0.55)",borderLeftWidth:1,borderLeftColor:"rgba(255,255,255,0.07)"},children:v.jsx($r,{audiobook:t,onDragging:this.props.onDragging})})]}),v.jsxs(Ye,{style:{width:"100%",height:bH,backgroundColor:"rgba(12,12,14,0.94)",borderTopWidth:1,borderTopColor:"rgba(255,255,255,0.09)",paddingHorizontal:24,justifyContent:"center",zIndex:200},children:[this.props.loading&&v.jsx(qi,{}),v.jsxs(Ie,{valign:"center",style:{width:"100%",height:54,justifyContent:"space-between"},children:[v.jsxs(Ie,{valign:"center",style:{flex:1,minWidth:0,paddingRight:16},children:[v.jsx(Ye,{style:{flex:1,minWidth:0},children:v.jsx(qr,{align:"left",showAlbum:!0,navigation:this.props.navigation,onPress:this.props.onContextMenu,fontSize:14,lineHeight:17})}),T.settings.playerShowCodec&&v.jsx(Ze,{style:{marginLeft:16,marginRight:4,flexShrink:0},children:v.jsx(Xi,{onDragging:this.props.onDragging})})]}),v.jsx(Ie,{valign:"center",halign:"center",style:{flexShrink:0},children:v.jsx(ji,{plain:Ke,extraControls:!0})}),v.jsxs(Ie,{valign:"center",halign:"right",style:{flex:1,minWidth:0,paddingLeft:16,justifyContent:"flex-end"},children:[T.settings.playerShowVolume&&s&&v.jsx(Ie,{style:{width:155,marginRight:12},children:v.jsx(da,{showSpeakerControl:!0})}),v.jsx(Fl,{style:{marginRight:10}}),v.jsx(Ol,{style:{marginRight:8}}),!r&&!T.player.isOfflinePlayQueue&&v.jsx(bc,{outerStyle:{marginLeft:6,marginRight:6}}),v.jsx(Ws,{size:16,padding:4,onPress:this.props.onContextMenu,style:{margin:10,backgroundColor:"transparent"}}),v.jsx(f0,{}),Ke&&v.jsx(Ac,{onPress:this.onDismiss})]})]}),v.jsx(Ie,{valign:"center",halign:"center",style:{width:"100%",height:38},children:v.jsx(Yr,{driving:n,audiobook:t,podcast:e})})]})]})}})||${className};`;
   }
 
-  // 7. Account for the 104px bottom bar in Up Next virtualized list height (Dc)
+  js = js.slice(0, p0Match.index) + newSideBySide + js.slice(endIdx + endPattern.length);
+  console.log(`Patched ${varName} in Player bundle with Split-Screen Left Artwork + Right Queue + Full-Width Bottom Bar`);
+
+  // 6. Prioritize side-by-side layout (p0/R0) over card mode when landscape & useTabletSideBySideLayout are active
+  const newLayoutSelectRe = /([A-Za-z0-9_$]+)=([A-Za-z0-9_$]+)\?([A-Za-z0-9_$]+):([A-Za-z0-9_$]+)\.card\?([A-Za-z0-9_$]+):\4\.landscape\?([A-Za-z0-9_$]+)\.app\.useTabletSideBySideLayout\?([A-Za-z0-9_$]+):([A-Za-z0-9_$]+):([A-Za-z0-9_$]+)/;
+  if (newLayoutSelectRe.test(js)) {
+    js = js.replace(
+      newLayoutSelectRe,
+      (match, assign, skinCheck, skinLayout, screen, cardLayout, store, sbsLayout, lndLayout, prtLayout) => {
+        return `${assign}=${skinCheck}?${skinLayout}:${screen}.landscape&&${store}.app.useTabletSideBySideLayout?${sbsLayout}:${screen}.card?${cardLayout}:${screen}.landscape?${lndLayout}:${prtLayout}`;
+      }
+    );
+    console.log("Prioritized side-by-side split-screen layout over card aspect-ratio override (v5)");
+  } else {
+    const origLayoutSelect = "const o=fe.card?l0:fe.landscape?(T.app.useTabletSideBySideLayout?p0:d0):m0";
+    const newLayoutSelect = "const o=fe.landscape&&T.app.useTabletSideBySideLayout?p0:fe.card?l0:fe.landscape?d0:m0";
+    if (js.includes(origLayoutSelect)) {
+      js = js.replace(origLayoutSelect, newLayoutSelect);
+      console.log("Prioritized side-by-side split-screen layout (p0) over card aspect-ratio override (legacy)");
+    }
+  }
+
+  // 7. Account for the 104px bottom bar in Up Next virtualized list height (Dc) (legacy only)
   const origQueueHeight = "style:{width:i,height:e-80}";
   const newQueueHeight = "style:{width:i,height:T.app.useTabletSideBySideLayout&&fe.landscape?e-184:e-80}";
   if (js.includes(origQueueHeight)) {
     js = js.replace(origQueueHeight, newQueueHeight);
-    console.log("Adjusted PlayQueue Up Next scroll viewport height for 104px bottom bar");
+    console.log("Adjusted PlayQueue Up Next scroll viewport height for 104px bottom bar (legacy)");
   }
 
   return js;
